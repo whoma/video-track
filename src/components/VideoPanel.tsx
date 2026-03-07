@@ -25,17 +25,32 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const onChange = () => {
+      const doc = document as Document & { webkitFullscreenElement?: Element };
+      setIsFullscreen(!!(document.fullscreenElement || doc.webkitFullscreenElement));
+    };
     document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
+    document.addEventListener('webkitfullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      document.removeEventListener('webkitfullscreenchange', onChange);
+    };
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (!panelRef.current) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+    const el = panelRef.current;
+    if (!el) return;
+
+    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    const isFS = !!(document.fullscreenElement || doc.webkitFullscreenElement);
+
+    if (isFS) {
+      if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+      else document.exitFullscreen().catch(() => {});
     } else {
-      panelRef.current.requestFullscreen();
+      const reqFS = el.requestFullscreen
+        ?? (el as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen;
+      if (reqFS) reqFS.call(el).catch(() => {});
     }
   }, []);
 

@@ -48,14 +48,6 @@ export default function App(): JSX.Element {
 
   const beginDetection = useCallback(async (callbacks: DrawCallbacks, model: ModelType) => {
     callbacksRef.current = callbacks;
-
-    const origDraw = callbacks.drawDetections;
-    callbacks.drawDetections = (predictions) => {
-      origDraw(predictions);
-      const classes = predictions.map((p) => p.class);
-      window.dispatchEvent(new CustomEvent('detection-classes', { detail: classes }));
-    };
-
     await loadModel(model);
     const video = videoRef.current;
     if (video) {

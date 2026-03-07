@@ -12,7 +12,6 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
   const lastAlertTimeRef = useRef<Record<string, number>>({});
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Reset when stopped
   useEffect(() => {
     if (!isActive) {
       setAlertClasses(new Set());
@@ -20,11 +19,19 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
     }
   }, [isActive]);
 
-  const playBeep = useCallback(() => {
+  // Ensure AudioContext is created & resumed on a user gesture
+  const ensureAudioCtx = useCallback(() => {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new AudioContext();
     }
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+  }, []);
+
+  const playBeep = useCallback(() => {
     const ctx = audioCtxRef.current;
+    if (!ctx || ctx.state !== 'running') return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -40,7 +47,6 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
   const triggerAlert = useCallback((cls: string) => {
     const now = Date.now();
     const last = lastAlertTimeRef.current[cls] || 0;
-    // Throttle: at most once per 2 seconds per class
     if (now - last < 2000) return;
     lastAlertTimeRef.current[cls] = now;
 
@@ -52,7 +58,6 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
     }
   }, [alertMode, playBeep]);
 
-  // Listen for detection events and trigger alerts
   useEffect(() => {
     if (!isActive || alertClasses.size === 0) return;
 
@@ -61,7 +66,7 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
       for (const cls of classes) {
         if (alertClasses.has(cls)) {
           triggerAlert(cls);
-          break; // one alert per frame is enough
+          break;
         }
       }
     };
@@ -69,14 +74,21 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
     return () => window.removeEventListener('detection-classes', handler);
   }, [isActive, alertClasses, triggerAlert]);
 
+  // Toggle class AND initialize AudioContext on the same user click
   const toggleClass = useCallback((cls: string) => {
+    ensureAudioCtx();
     setAlertClasses(prev => {
       const next = new Set(prev);
       if (next.has(cls)) next.delete(cls);
       else next.add(cls);
       return next;
     });
-  }, []);
+  }, [ensureAudioCtx]);
+
+  const handleModeChange = useCallback((mode: 'sound' | 'vibrate' | 'both') => {
+    ensureAudioCtx();
+    setAlertMode(mode);
+  }, [ensureAudioCtx]);
 
   if (!isActive || detectedClasses.length === 0) return null;
 
@@ -87,19 +99,19 @@ export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.E
         <div className="alert-mode">
           <button
             className={`mode-btn ${alertMode === 'sound' ? 'active' : ''}`}
-            onClick={() => setAlertMode('sound')}
+            onClick={() => handleModeChange('sound')}
           >
             声音
           </button>
           <button
             className={`mode-btn ${alertMode === 'vibrate' ? 'active' : ''}`}
-            onClick={() => setAlertMode('vibrate')}
+            onClick={() => handleModeChange('vibrate')}
           >
             震动
           </button>
           <button
             className={`mode-btn ${alertMode === 'both' ? 'active' : ''}`}
-            onClick={() => setAlertMode('both')}
+            onClick={() => handleModeChange('both')}
           >
             声音+震动
           </button>

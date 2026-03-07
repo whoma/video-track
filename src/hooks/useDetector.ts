@@ -142,6 +142,8 @@ export function useDetector(): UseDetectorReturn {
       const t0 = performance.now();
       let count = 0;
 
+      const detectedLabels: string[] = [];
+
       try {
         if (model === 'coco-ssd' && modelsRef.current.cocoSsd) {
           const predictions = await modelsRef.current.cocoSsd.detect(videoEl);
@@ -149,6 +151,7 @@ export function useDetector(): UseDetectorReturn {
           const filtered = predictions.filter(p => p.score >= minScore);
           callbacks.drawDetections(filtered);
           count = filtered.length;
+          for (const p of filtered) detectedLabels.push(p.class);
         } else if (model === 'blazeface' && modelsRef.current.blazeface) {
           const faces = await modelsRef.current.blazeface.estimateFaces(videoEl, false);
           if (gen !== generationRef.current) return;
@@ -156,6 +159,7 @@ export function useDetector(): UseDetectorReturn {
           const filtered = converted.filter(f => f.probability[0] >= minScore);
           callbacks.drawFaces(filtered);
           count = filtered.length;
+          for (let i = 0; i < count; i++) detectedLabels.push('face');
         } else if (model === 'posenet' && modelsRef.current.posenet) {
           const poses = await modelsRef.current.posenet.estimateMultiplePoses(videoEl, {
             flipHorizontal: false,
@@ -166,24 +170,26 @@ export function useDetector(): UseDetectorReturn {
           if (gen !== generationRef.current) return;
           callbacks.drawPoses(poses);
           count = poses.length;
+          for (let i = 0; i < count; i++) detectedLabels.push('pose');
         } else if (model === 'hand-pose' && modelsRef.current.handPose) {
           const hands = await modelsRef.current.handPose.estimateHands(videoEl);
           if (gen !== generationRef.current) return;
           const filtered = hands.filter(h => (h.score ?? 1) >= minScore);
           callbacks.drawHands(filtered);
           count = filtered.length;
+          for (const h of filtered) detectedLabels.push(h.handedness || 'hand');
         } else if (model === 'face-mesh' && modelsRef.current.faceMesh) {
           const faces = await modelsRef.current.faceMesh.estimateFaces(videoEl);
           if (gen !== generationRef.current) return;
           callbacks.drawFaceMesh(faces);
           count = faces.length;
+          for (let i = 0; i < count; i++) detectedLabels.push('face-mesh');
         } else if (model === 'body-seg' && modelsRef.current.bodySeg) {
           const segmentation = await modelsRef.current.bodySeg.segmentPeople(videoEl);
           if (gen !== generationRef.current) return;
           if (segmentation.length > 0 && segmentation[0].mask) {
             const maskObj = segmentation[0].mask;
             const source = await maskObj.toCanvasImageSource();
-            // toCanvasImageSource may return ImageBitmap or HTMLCanvasElement
             const tmpCanvas = document.createElement('canvas');
             const w = (source as HTMLCanvasElement).width ?? (source as ImageBitmap).width;
             const h = (source as HTMLCanvasElement).height ?? (source as ImageBitmap).height;
@@ -211,10 +217,15 @@ export function useDetector(): UseDetectorReturn {
             }
           }
           count = segmentation.length;
+          if (count > 0) detectedLabels.push('person');
         }
       } catch {
-        // Model inference can fail if video element is torn down; bail quietly
         if (gen !== generationRef.current) return;
+      }
+
+      // Dispatch for all models so AlertConfig and StatsChart work
+      if (detectedLabels.length > 0) {
+        window.dispatchEvent(new CustomEvent('detection-classes', { detail: detectedLabels }));
       }
 
       if (gen !== generationRef.current) return;
