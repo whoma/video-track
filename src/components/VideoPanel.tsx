@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, type RefObject, type JSX } from 'react';
+import { useRef, useCallback, useEffect, useState, type RefObject, type JSX } from 'react';
 import { drawDetections, drawFaces, drawPoses, drawHands, drawFaceMesh, drawSegmentation } from '../utils/drawDetections';
 import type { Detection, FaceDetection, Pose, Hand, Face } from '../utils/drawDetections';
 import type { DrawCallbacks } from '../hooks/useDetector';
@@ -21,6 +21,23 @@ interface Props {
 
 export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!panelRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      panelRef.current.requestFullscreen();
+    }
+  }, []);
 
   const makeCallbacks = useCallback((): DrawCallbacks => {
     const getCtx = (): CanvasContext | null => {
@@ -84,11 +101,16 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
   };
 
   return (
-    <div className="video-panel">
+    <div ref={panelRef} className={`video-panel${isFullscreen ? ' fullscreen' : ''}`}>
       <video ref={videoRef} autoPlay playsInline onLoadedData={handleLoadedData} />
       <canvas ref={canvasRef} className="overlay" />
       {loading && <div className="loading-overlay">模型加载中...</div>}
       {!isActive && !loading && <div className="placeholder">点击下方按钮开启摄像头或上传视频</div>}
+      {isActive && (
+        <button className="fullscreen-btn" onClick={toggleFullscreen} title={isFullscreen ? '退出全屏' : '全屏'}>
+          {isFullscreen ? '✕' : '⛶'}
+        </button>
+      )}
     </div>
   );
 }

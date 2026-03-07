@@ -43,3 +43,35 @@
 .video-panel .placeholder {
   color: #666;
 }
+
+.video-panel.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  aspect-ratio: auto;
+  background: #000;
+}
+
+.fullscreen-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s;
+  line-height: 1;
+}
+
+.fullscreen-btn:hover {
+  background: rgba(78, 204, 163, 0.7);
+}
