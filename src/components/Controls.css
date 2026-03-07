@@ -1,0 +1,50 @@
+.controls {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-weight: 500;
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-start {
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+.btn-start:hover:not(:disabled) {
+  background: #3db890;
+}
+
+.btn-stop {
+  background: #e74c3c;
+  color: #fff;
+}
+.btn-stop:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.btn-capture {
+  background: #3498db;
+  color: #fff;
+}
+.btn-capture:hover:not(:disabled) {
+  background: #2980b9;
+}

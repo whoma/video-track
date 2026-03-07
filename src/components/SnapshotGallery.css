@@ -1,0 +1,29 @@
+.gallery {
+  margin-top: 28px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.gallery-title {
+  font-size: 16px;
+  color: #888;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.gallery-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.gallery-grid img {
+  width: 210px;
+  border-radius: 8px;
+  border: 2px solid #2a2a3e;
+  transition: transform 0.2s;
+}
+
+.gallery-grid img:hover {
+  transform: scale(1.05);
+}

@@ -1,0 +1,19 @@
+.status-bar {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.status-text {
+  font-size: 14px;
+  color: #aaa;
+}
+
+.stats-text {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #666;
+}
+
+.stats-text strong {
+  color: #4ecca3;
+}

@@ -1,0 +1,58 @@
+.model-selector {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.model-label {
+  font-size: 14px;
+  color: #888;
+}
+
+.model-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.model-btn {
+  padding: 8px 16px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background: #222;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.model-btn:hover:not(:disabled) {
+  border-color: #4ecca3;
+  color: #fff;
+}
+
+.model-btn.active {
+  border-color: #4ecca3;
+  background: #2a3a35;
+  color: #4ecca3;
+}
+
+.model-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.model-desc {
+  font-size: 11px;
+  color: #666;
+}
+
+.model-btn.active .model-desc {
+  color: #4ecca3aa;
+}

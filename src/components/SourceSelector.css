@@ -1,0 +1,49 @@
+.source-selector {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.source-label {
+  font-size: 13px;
+  color: #888;
+}
+
+.camera-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.camera-select select {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #222;
+  color: #ccc;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.camera-select select:disabled {
+  opacity: 0.4;
+}
+
+.upload-btn {
+  padding: 8px 18px;
+  border: 2px dashed #555;
+  border-radius: 8px;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-btn:hover {
+  border-color: #4ecca3;
+  color: #4ecca3;
+}

@@ -1,0 +1,34 @@
+.stats-chart {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 720px;
+  background: #1e1e32;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chart-header h3 {
+  font-size: 15px;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.fps-badge {
+  background: #2a3a35;
+  color: #4ecca3;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chart-container {
+  width: 100%;
+}
