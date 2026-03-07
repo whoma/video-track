@@ -1,0 +1,90 @@
+.alert-config {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 720px;
+  background: #1e1e32;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alert-header h3 {
+  font-size: 15px;
+  color: #aaa;
+  font-weight: 500;
+}
+
+.alert-mode {
+  display: flex;
+  gap: 6px;
+}
+
+.mode-btn {
+  padding: 4px 12px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #222;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: #4ecca3;
+  color: #ccc;
+}
+
+.mode-btn.active {
+  border-color: #4ecca3;
+  background: #2a3a35;
+  color: #4ecca3;
+}
+
+.alert-hint {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.alert-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alert-tag {
+  padding: 6px 14px;
+  border: 1px solid #333;
+  border-radius: 16px;
+  background: #222;
+  color: #aaa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.alert-tag:hover {
+  border-color: #e74c3c;
+  color: #fff;
+}
+
+.alert-tag.selected {
+  border-color: #e74c3c;
+  background: #3a2020;
+  color: #e74c3c;
+}
+
+.alert-active-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #e74c3c;
+}

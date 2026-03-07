@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type JSX } from 'react';
+import { useState, useCallback, useRef, useEffect, type JSX } from 'react';
 import VideoPanel from './components/VideoPanel';
 import Controls from './components/Controls';
 import ModelSelector from './components/ModelSelector';
@@ -6,6 +6,7 @@ import SourceSelector from './components/SourceSelector';
 import StatusBar from './components/StatusBar';
 import StatsChart from './components/StatsChart';
 import SnapshotGallery from './components/SnapshotGallery';
+import AlertConfig from './components/AlertConfig';
 import { useCamera } from './hooks/useCamera';
 import { useDetector, type DrawCallbacks, type ModelType } from './hooks/useDetector';
 import { useRecorder } from './hooks/useRecorder';
@@ -16,7 +17,34 @@ export default function App(): JSX.Element {
   const { loading, stats, activeModel, threshold, setThreshold, loadModel, switchModel, startDetection, stopDetection } = useDetector();
   const { recording, startRecording, stopRecording } = useRecorder();
   const [snapshots, setSnapshots] = useState<string[]>([]);
+  const [detectedClasses, setDetectedClasses] = useState<string[]>([]);
   const callbacksRef = useRef<DrawCallbacks | null>(null);
+  const seenClassesRef = useRef<Set<string>>(new Set());
+
+  // Track detected classes from custom events
+  useEffect(() => {
+    if (!isActive) {
+      seenClassesRef.current.clear();
+      setDetectedClasses([]);
+      return;
+    }
+
+    const handler = (e: Event) => {
+      const classes = (e as CustomEvent<string[]>).detail;
+      let changed = false;
+      for (const cls of classes) {
+        if (!seenClassesRef.current.has(cls)) {
+          seenClassesRef.current.add(cls);
+          changed = true;
+        }
+      }
+      if (changed) {
+        setDetectedClasses([...seenClassesRef.current]);
+      }
+    };
+    window.addEventListener('detection-classes', handler);
+    return () => window.removeEventListener('detection-classes', handler);
+  }, [isActive]);
 
   const beginDetection = useCallback(async (callbacks: DrawCallbacks, model: ModelType) => {
     callbacksRef.current = callbacks;
@@ -140,6 +168,8 @@ export default function App(): JSX.Element {
       <StatusBar isActive={isActive} loading={loading} stats={stats} />
 
       <StatsChart stats={stats} isActive={isActive} />
+
+      <AlertConfig isActive={isActive} detectedClasses={detectedClasses} />
 
       <SnapshotGallery snapshots={snapshots} />
     </div>

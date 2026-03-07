@@ -73,13 +73,22 @@ export function useDetector(): UseDetectorReturn {
   const [activeModel, setActiveModel] = useState<ModelType>('coco-ssd');
   const [threshold, setThreshold] = useState(0.5);
   const rafRef = useRef<number | null>(null);
-  const detectingRef = useRef(false);
   const activeModelRef = useRef<ModelType>('coco-ssd');
   const thresholdRef = useRef(0.5);
+  // Generation counter to prevent stale async loops from continuing
+  const generationRef = useRef(0);
 
   const updateThreshold = useCallback((v: number) => {
     setThreshold(v);
     thresholdRef.current = v;
+  }, []);
+
+  const cancelLoop = useCallback(() => {
+    generationRef.current++;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
   }, []);
 
   const loadModel = useCallback(async (type: ModelType) => {
@@ -87,102 +96,128 @@ export function useDetector(): UseDetectorReturn {
     activeModelRef.current = type;
     setActiveModel(type);
 
-    if (type === 'coco-ssd' && !modelsRef.current.cocoSsd) {
-      modelsRef.current.cocoSsd = await cocoSsd.load();
-    } else if (type === 'blazeface' && !modelsRef.current.blazeface) {
-      modelsRef.current.blazeface = await blazeface.load();
-    } else if (type === 'posenet' && !modelsRef.current.posenet) {
-      modelsRef.current.posenet = await posenet.load({
-        architecture: 'MobileNetV1',
-        outputStride: 16,
-        inputResolution: { width: 257, height: 200 },
-        multiplier: 0.75,
-      });
-    } else if (type === 'hand-pose' && !modelsRef.current.handPose) {
-      modelsRef.current.handPose = await handPoseDetection.createDetector(
-        handPoseDetection.SupportedModels.MediaPipeHands,
-        { runtime: 'tfjs', maxHands: 4 }
-      );
-    } else if (type === 'face-mesh' && !modelsRef.current.faceMesh) {
-      modelsRef.current.faceMesh = await faceLandmarksDetection.createDetector(
-        faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
-        { runtime: 'tfjs', maxFaces: 4, refineLandmarks: true }
-      );
-    } else if (type === 'body-seg' && !modelsRef.current.bodySeg) {
-      modelsRef.current.bodySeg = await bodySegmentation.createSegmenter(
-        bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
-        { runtime: 'tfjs', modelType: 'general' }
-      );
+    try {
+      if (type === 'coco-ssd' && !modelsRef.current.cocoSsd) {
+        modelsRef.current.cocoSsd = await cocoSsd.load();
+      } else if (type === 'blazeface' && !modelsRef.current.blazeface) {
+        modelsRef.current.blazeface = await blazeface.load();
+      } else if (type === 'posenet' && !modelsRef.current.posenet) {
+        modelsRef.current.posenet = await posenet.load({
+          architecture: 'MobileNetV1',
+          outputStride: 16,
+          inputResolution: { width: 257, height: 200 },
+          multiplier: 0.75,
+        });
+      } else if (type === 'hand-pose' && !modelsRef.current.handPose) {
+        modelsRef.current.handPose = await handPoseDetection.createDetector(
+          handPoseDetection.SupportedModels.MediaPipeHands,
+          { runtime: 'tfjs', maxHands: 4 }
+        );
+      } else if (type === 'face-mesh' && !modelsRef.current.faceMesh) {
+        modelsRef.current.faceMesh = await faceLandmarksDetection.createDetector(
+          faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
+          { runtime: 'tfjs', maxFaces: 4, refineLandmarks: true }
+        );
+      } else if (type === 'body-seg' && !modelsRef.current.bodySeg) {
+        modelsRef.current.bodySeg = await bodySegmentation.createSegmenter(
+          bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation,
+          { runtime: 'tfjs', modelType: 'general' }
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   const startDetection = useCallback((videoEl: HTMLVideoElement, callbacks: DrawCallbacks) => {
-    detectingRef.current = true;
+    // Increment generation so any in-flight old loop will bail out
+    const gen = ++generationRef.current;
 
     const loop = async () => {
-      if (!detectingRef.current || videoEl.paused || videoEl.ended) return;
+      // If generation has changed, this loop is stale — stop
+      if (gen !== generationRef.current || videoEl.paused || videoEl.ended) return;
 
       const model = activeModelRef.current;
       const minScore = thresholdRef.current;
       const t0 = performance.now();
       let count = 0;
 
-      if (model === 'coco-ssd' && modelsRef.current.cocoSsd) {
-        const predictions = await modelsRef.current.cocoSsd.detect(videoEl);
-        const filtered = predictions.filter(p => p.score >= minScore);
-        callbacks.drawDetections(filtered);
-        count = filtered.length;
-      } else if (model === 'blazeface' && modelsRef.current.blazeface) {
-        const faces = await modelsRef.current.blazeface.estimateFaces(videoEl, false);
-        const converted = toFaceDetections(faces);
-        const filtered = converted.filter(f => f.probability[0] >= minScore);
-        callbacks.drawFaces(filtered);
-        count = filtered.length;
-      } else if (model === 'posenet' && modelsRef.current.posenet) {
-        const poses = await modelsRef.current.posenet.estimateMultiplePoses(videoEl, {
-          flipHorizontal: false,
-          maxDetections: 5,
-          scoreThreshold: minScore,
-          nmsRadius: 20,
-        });
-        callbacks.drawPoses(poses);
-        count = poses.length;
-      } else if (model === 'hand-pose' && modelsRef.current.handPose) {
-        const hands = await modelsRef.current.handPose.estimateHands(videoEl);
-        const filtered = hands.filter(h => (h.score ?? 1) >= minScore);
-        callbacks.drawHands(filtered);
-        count = filtered.length;
-      } else if (model === 'face-mesh' && modelsRef.current.faceMesh) {
-        const faces = await modelsRef.current.faceMesh.estimateFaces(videoEl);
-        callbacks.drawFaceMesh(faces);
-        count = faces.length;
-      } else if (model === 'body-seg' && modelsRef.current.bodySeg) {
-        const segmentation = await modelsRef.current.bodySeg.segmentPeople(videoEl);
-        if (segmentation.length > 0 && segmentation[0].mask) {
-          const maskObj = segmentation[0].mask;
-          const canvas = (await maskObj.toCanvasImageSource()) as HTMLCanvasElement;
-          const tmpCtx = canvas.getContext?.('2d');
-          if (tmpCtx) {
-            const imgData = tmpCtx.getImageData(0, 0, canvas.width, canvas.height);
-            // Color the mask: person=green overlay, bg=transparent
-            for (let i = 0; i < imgData.data.length; i += 4) {
-              const personProb = imgData.data[i]; // mask value
-              if (personProb > 128) {
-                imgData.data[i] = 0;
-                imgData.data[i + 1] = 255;
-                imgData.data[i + 2] = 170;
-                imgData.data[i + 3] = 80;
-              } else {
-                imgData.data[i + 3] = 0;
+      try {
+        if (model === 'coco-ssd' && modelsRef.current.cocoSsd) {
+          const predictions = await modelsRef.current.cocoSsd.detect(videoEl);
+          if (gen !== generationRef.current) return;
+          const filtered = predictions.filter(p => p.score >= minScore);
+          callbacks.drawDetections(filtered);
+          count = filtered.length;
+        } else if (model === 'blazeface' && modelsRef.current.blazeface) {
+          const faces = await modelsRef.current.blazeface.estimateFaces(videoEl, false);
+          if (gen !== generationRef.current) return;
+          const converted = toFaceDetections(faces);
+          const filtered = converted.filter(f => f.probability[0] >= minScore);
+          callbacks.drawFaces(filtered);
+          count = filtered.length;
+        } else if (model === 'posenet' && modelsRef.current.posenet) {
+          const poses = await modelsRef.current.posenet.estimateMultiplePoses(videoEl, {
+            flipHorizontal: false,
+            maxDetections: 5,
+            scoreThreshold: minScore,
+            nmsRadius: 20,
+          });
+          if (gen !== generationRef.current) return;
+          callbacks.drawPoses(poses);
+          count = poses.length;
+        } else if (model === 'hand-pose' && modelsRef.current.handPose) {
+          const hands = await modelsRef.current.handPose.estimateHands(videoEl);
+          if (gen !== generationRef.current) return;
+          const filtered = hands.filter(h => (h.score ?? 1) >= minScore);
+          callbacks.drawHands(filtered);
+          count = filtered.length;
+        } else if (model === 'face-mesh' && modelsRef.current.faceMesh) {
+          const faces = await modelsRef.current.faceMesh.estimateFaces(videoEl);
+          if (gen !== generationRef.current) return;
+          callbacks.drawFaceMesh(faces);
+          count = faces.length;
+        } else if (model === 'body-seg' && modelsRef.current.bodySeg) {
+          const segmentation = await modelsRef.current.bodySeg.segmentPeople(videoEl);
+          if (gen !== generationRef.current) return;
+          if (segmentation.length > 0 && segmentation[0].mask) {
+            const maskObj = segmentation[0].mask;
+            const source = await maskObj.toCanvasImageSource();
+            // toCanvasImageSource may return ImageBitmap or HTMLCanvasElement
+            const tmpCanvas = document.createElement('canvas');
+            const w = (source as HTMLCanvasElement).width ?? (source as ImageBitmap).width;
+            const h = (source as HTMLCanvasElement).height ?? (source as ImageBitmap).height;
+            tmpCanvas.width = w;
+            tmpCanvas.height = h;
+            const tmpCtx = tmpCanvas.getContext('2d');
+            if (tmpCtx) {
+              tmpCtx.drawImage(source, 0, 0);
+              const imgData = tmpCtx.getImageData(0, 0, w, h);
+              for (let i = 0; i < imgData.data.length; i += 4) {
+                const v = imgData.data[i];
+                if (v > 128) {
+                  imgData.data[i] = 0;
+                  imgData.data[i + 1] = 255;
+                  imgData.data[i + 2] = 170;
+                  imgData.data[i + 3] = 80;
+                } else {
+                  imgData.data[i + 3] = 0;
+                }
               }
+              callbacks.drawSegmentation(imgData);
             }
-            callbacks.drawSegmentation(imgData);
+            if ('close' in source && typeof source.close === 'function') {
+              source.close();
+            }
           }
+          count = segmentation.length;
         }
-        count = segmentation.length;
+      } catch {
+        // Model inference can fail if video element is torn down; bail quietly
+        if (gen !== generationRef.current) return;
       }
+
+      if (gen !== generationRef.current) return;
 
       const ms = (performance.now() - t0).toFixed(0);
       setStats({ count, ms, model });
@@ -194,29 +229,18 @@ export function useDetector(): UseDetectorReturn {
   }, []);
 
   const switchModel = useCallback(async (type: ModelType) => {
-    const wasDetecting = detectingRef.current;
-    if (wasDetecting) {
-      detectingRef.current = false;
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    }
+    cancelLoop();
     await loadModel(type);
-  }, [loadModel]);
+  }, [loadModel, cancelLoop]);
 
   const stopDetection = useCallback(() => {
-    detectingRef.current = false;
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
+    cancelLoop();
     setStats(null);
-  }, []);
+  }, [cancelLoop]);
 
   useEffect(() => {
     return () => {
-      detectingRef.current = false;
+      generationRef.current++;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
