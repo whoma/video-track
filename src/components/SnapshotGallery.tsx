@@ -1,10 +1,11 @@
+import type { JSX } from 'react';
 import './SnapshotGallery.css';
 
 interface Props {
   snapshots: string[];
 }
 
-export default function SnapshotGallery({ snapshots }: Props) {
+export default function SnapshotGallery({ snapshots }: Props): JSX.Element | null {
   if (snapshots.length === 0) return null;
 
   return (

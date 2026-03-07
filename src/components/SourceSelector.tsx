@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type JSX } from 'react';
 import './SourceSelector.css';
 
 interface Props {
@@ -9,10 +9,10 @@ interface Props {
   onUploadFile: (file: File) => void;
 }
 
-export default function SourceSelector({ cameras, activeCameraId, isActive, onSwitchCamera, onUploadFile }: Props) {
+export default function SourceSelector({ cameras, activeCameraId, isActive, onSwitchCamera, onUploadFile }: Props): JSX.Element {
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (file) onUploadFile(file);
   };

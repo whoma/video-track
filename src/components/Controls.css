@@ -1,6 +1,13 @@
 .controls {
   margin-top: 20px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.controls-row {
+  display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
@@ -47,4 +54,42 @@
 }
 .btn-capture:hover:not(:disabled) {
   background: #2980b9;
+}
+
+.btn-record {
+  background: #9b59b6;
+  color: #fff;
+}
+.btn-record:hover:not(:disabled) {
+  background: #8e44ad;
+}
+.btn-record.recording {
+  background: #e74c3c;
+  animation: pulse-record 1s infinite;
+}
+
+@keyframes pulse-record {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.threshold-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.threshold-label {
+  font-size: 13px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.threshold-label strong {
+  color: #4ecca3;
+}
+
+.threshold-slider {
+  width: 180px;
+  accent-color: #4ecca3;
 }

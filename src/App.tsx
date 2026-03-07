@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, type JSX } from 'react';
 import VideoPanel from './components/VideoPanel';
 import Controls from './components/Controls';
 import ModelSelector from './components/ModelSelector';
@@ -8,18 +8,19 @@ import StatsChart from './components/StatsChart';
 import SnapshotGallery from './components/SnapshotGallery';
 import { useCamera } from './hooks/useCamera';
 import { useDetector, type DrawCallbacks, type ModelType } from './hooks/useDetector';
+import { useRecorder } from './hooks/useRecorder';
 import './App.css';
 
-export default function App() {
+export default function App(): JSX.Element {
   const { videoRef, isActive, cameras, activeCameraId, start, loadFile, stop, switchCamera } = useCamera();
-  const { loading, stats, activeModel, loadModel, switchModel, startDetection, stopDetection } = useDetector();
+  const { loading, stats, activeModel, threshold, setThreshold, loadModel, switchModel, startDetection, stopDetection } = useDetector();
+  const { recording, startRecording, stopRecording } = useRecorder();
   const [snapshots, setSnapshots] = useState<string[]>([]);
   const callbacksRef = useRef<DrawCallbacks | null>(null);
 
   const beginDetection = useCallback(async (callbacks: DrawCallbacks, model: ModelType) => {
     callbacksRef.current = callbacks;
 
-    // Dispatch detection class events for the stats chart
     const origDraw = callbacks.drawDetections;
     callbacks.drawDetections = (predictions) => {
       origDraw(predictions);
@@ -28,14 +29,18 @@ export default function App() {
     };
 
     await loadModel(model);
-    startDetection(videoRef.current!, callbacks);
+    const video = videoRef.current;
+    if (video) {
+      startDetection(video, callbacks);
+    }
   }, [loadModel, startDetection, videoRef]);
 
   const handleStart = useCallback(async () => {
     try {
       await start();
-    } catch (err) {
-      alert('无法访问摄像头: ' + (err as Error).message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert('无法访问摄像头: ' + message);
     }
   }, [start]);
 
@@ -47,10 +52,11 @@ export default function App() {
   );
 
   const handleStop = useCallback(() => {
+    if (recording) stopRecording();
     stopDetection();
     stop();
     callbacksRef.current = null;
-  }, [stopDetection, stop]);
+  }, [stopDetection, stop, recording, stopRecording]);
 
   const handleModelSwitch = useCallback(async (model: ModelType) => {
     await switchModel(model);
@@ -71,7 +77,8 @@ export default function App() {
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.drawImage(video, 0, 0);
 
     const overlayCanvas = video.parentElement?.querySelector('canvas');
@@ -81,6 +88,14 @@ export default function App() {
 
     setSnapshots((prev) => [canvas.toDataURL('image/png'), ...prev]);
   }, [videoRef]);
+
+  const handleRecord = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const overlayCanvas = video.parentElement?.querySelector('canvas');
+    if (!overlayCanvas) return;
+    startRecording(video, overlayCanvas as HTMLCanvasElement);
+  }, [videoRef, startRecording]);
 
   return (
     <div className="app">
@@ -98,9 +113,14 @@ export default function App() {
 
       <Controls
         isActive={isActive}
+        recording={recording}
+        threshold={threshold}
         onStart={handleStart}
         onStop={handleStop}
         onCapture={handleCapture}
+        onRecord={handleRecord}
+        onStopRecord={stopRecording}
+        onThresholdChange={setThreshold}
       />
 
       <ModelSelector

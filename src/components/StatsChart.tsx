@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import type { DetectionStats } from '../hooks/useDetector';
 import { getColor } from '../utils/colors';
@@ -14,7 +14,7 @@ interface Props {
   isActive: boolean;
 }
 
-export default function StatsChart({ stats, isActive }: Props) {
+export default function StatsChart({ stats, isActive }: Props): JSX.Element | null {
   const [classData, setClassData] = useState<DetectionRecord[]>([]);
   const [fpsHistory, setFpsHistory] = useState<number[]>([]);
   const counterRef = useRef<Record<string, number>>({});
@@ -54,8 +54,8 @@ export default function StatsChart({ stats, isActive }: Props) {
 
   // Expose counter update
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as string[];
+    const handler = (e: Event): void => {
+      const detail = (e as CustomEvent<string[]>).detail;
       for (const cls of detail) {
         counterRef.current[cls] = (counterRef.current[cls] || 0) + 1;
       }

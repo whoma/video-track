@@ -1,10 +1,14 @@
-import type { DetectionStats } from '../hooks/useDetector';
+import type { JSX } from 'react';
+import type { DetectionStats, ModelType } from '../hooks/useDetector';
 import './StatusBar.css';
 
-const modelLabels: Record<string, string> = {
+const modelLabels: Record<ModelType, string> = {
   'coco-ssd': '物体',
   'blazeface': '人脸',
   'posenet': '人体姿态',
+  'hand-pose': '手势',
+  'face-mesh': '面部网格',
+  'body-seg': '人体分割',
 };
 
 interface Props {
@@ -13,7 +17,7 @@ interface Props {
   stats: DetectionStats | null;
 }
 
-export default function StatusBar({ isActive, loading, stats }: Props) {
+export default function StatusBar({ isActive, loading, stats }: Props): JSX.Element {
   let message = '点击"开启摄像头"或上传视频开始采集';
   if (loading) message = '正在加载识别模型，请稍候...';
   else if (isActive) message = '正在实时识别...';

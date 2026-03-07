@@ -1,8 +1,16 @@
-import { useRef, useCallback, useEffect, type RefObject } from 'react';
-import { drawDetections, drawFaces, drawPoses } from '../utils/drawDetections';
-import type { Detection, FaceDetection, Pose } from '../utils/drawDetections';
+import { useRef, useCallback, useEffect, type RefObject, type JSX } from 'react';
+import { drawDetections, drawFaces, drawPoses, drawHands, drawFaceMesh, drawSegmentation } from '../utils/drawDetections';
+import type { Detection, FaceDetection, Pose, Hand, Face } from '../utils/drawDetections';
 import type { DrawCallbacks } from '../hooks/useDetector';
 import './VideoPanel.css';
+
+interface CanvasContext {
+  ctx: CanvasRenderingContext2D;
+  vw: number;
+  vh: number;
+  cw: number;
+  ch: number;
+}
 
 interface Props {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -11,11 +19,11 @@ interface Props {
   onVideoReady: (callbacks: DrawCallbacks) => void;
 }
 
-export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }: Props) {
+export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const makeCallbacks = useCallback((): DrawCallbacks => {
-    const getCtx = () => {
+    const getCtx = (): CanvasContext | null => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (!video || !canvas) return null;
@@ -24,8 +32,11 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
       canvas.width = rect.width;
       canvas.height = rect.height;
 
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
       return {
-        ctx: canvas.getContext('2d')!,
+        ctx,
         vw: video.videoWidth,
         vh: video.videoHeight,
         cw: rect.width,
@@ -46,17 +57,29 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
         const info = getCtx();
         if (info) drawPoses(info.ctx, poses, info.vw, info.vh, info.cw, info.ch);
       },
+      drawHands: (hands: Hand[]) => {
+        const info = getCtx();
+        if (info) drawHands(info.ctx, hands, info.vw, info.vh, info.cw, info.ch);
+      },
+      drawFaceMesh: (faces: Face[]) => {
+        const info = getCtx();
+        if (info) drawFaceMesh(info.ctx, faces, info.vw, info.vh, info.cw, info.ch);
+      },
+      drawSegmentation: (mask: ImageData) => {
+        const info = getCtx();
+        if (info) drawSegmentation(info.ctx, mask, info.cw, info.ch);
+      },
     };
   }, [videoRef]);
 
   useEffect(() => {
     if (!isActive && canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d')!;
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      const ctx = canvasRef.current.getContext('2d');
+      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
   }, [isActive]);
 
-  const handleLoadedData = () => {
+  const handleLoadedData = (): void => {
     onVideoReady(makeCallbacks());
   };
 

@@ -1,8 +1,20 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 
 export type VideoSourceType = 'camera' | 'file';
 
-export function useCamera() {
+export interface UseCameraReturn {
+  videoRef: RefObject<HTMLVideoElement | null>;
+  isActive: boolean;
+  sourceType: VideoSourceType;
+  cameras: MediaDeviceInfo[];
+  activeCameraId: string;
+  start: (deviceId?: string) => Promise<void>;
+  loadFile: (file: File) => void;
+  stop: () => void;
+  switchCamera: (deviceId: string) => Promise<void>;
+}
+
+export function useCamera(): UseCameraReturn {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [isActive, setIsActive] = useState(false);
