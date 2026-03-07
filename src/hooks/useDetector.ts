@@ -51,7 +51,7 @@ export function useDetector() {
         architecture: 'MobileNetV1',
         outputStride: 16,
         multiplier: 0.75,
-      });
+      } as posenet.ModelConfig);
     }
 
     setLoading(false);
@@ -80,7 +80,7 @@ export function useDetector() {
           maxDetections: 5,
           scoreThreshold: 0.3,
           nmsRadius: 20,
-        });
+        } as posenet.MultiPersonInferenceConfig);
         callbacks.drawPoses(poses as Pose[]);
         count = poses.length;
       }

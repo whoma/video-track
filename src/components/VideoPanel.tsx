@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, RefObject } from 'react';
+import { useRef, useCallback, useEffect, type RefObject } from 'react';
 import { drawDetections, drawFaces, drawPoses } from '../utils/drawDetections';
 import type { Detection, FaceDetection, Pose } from '../utils/drawDetections';
 import type { DrawCallbacks } from '../hooks/useDetector';
