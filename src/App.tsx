@@ -20,6 +20,8 @@ export default function App(): JSX.Element {
   const [detectedClasses, setDetectedClasses] = useState<string[]>([]);
   const callbacksRef = useRef<DrawCallbacks | null>(null);
   const seenClassesRef = useRef<Set<string>>(new Set());
+  // Guard: prevent onLoadedData from restarting detection after intentional stop
+  const allowDetectionRef = useRef(false);
 
   // Track detected classes from custom events
   useEffect(() => {
@@ -48,17 +50,23 @@ export default function App(): JSX.Element {
 
   const beginDetection = useCallback(async (callbacks: DrawCallbacks, model: ModelType) => {
     callbacksRef.current = callbacks;
-    await loadModel(model);
+    try {
+      await loadModel(model);
+    } catch {
+      return;
+    }
     const video = videoRef.current;
-    if (video) {
+    if (video && allowDetectionRef.current) {
       startDetection(video, callbacks);
     }
   }, [loadModel, startDetection, videoRef]);
 
   const handleStart = useCallback(async () => {
+    allowDetectionRef.current = true;
     try {
       await start();
     } catch (err: unknown) {
+      allowDetectionRef.current = false;
       const message = err instanceof Error ? err.message : String(err);
       alert('无法访问摄像头: ' + message);
     }
@@ -66,12 +74,15 @@ export default function App(): JSX.Element {
 
   const handleVideoReady = useCallback(
     (callbacks: DrawCallbacks) => {
+      // Only start detection if explicitly allowed (not after an intentional stop)
+      if (!allowDetectionRef.current) return;
       beginDetection(callbacks, activeModel);
     },
     [beginDetection, activeModel]
   );
 
   const handleStop = useCallback(() => {
+    allowDetectionRef.current = false;
     if (recording) stopRecording();
     stopDetection();
     stop();
@@ -79,13 +90,19 @@ export default function App(): JSX.Element {
   }, [stopDetection, stop, recording, stopRecording]);
 
   const handleModelSwitch = useCallback(async (model: ModelType) => {
-    await switchModel(model);
-    if (callbacksRef.current && videoRef.current) {
+    try {
+      await switchModel(model);
+    } catch {
+      // model load failed — keep current state
+      return;
+    }
+    if (callbacksRef.current && videoRef.current && allowDetectionRef.current) {
       startDetection(videoRef.current, callbacksRef.current);
     }
   }, [switchModel, startDetection, videoRef]);
 
   const handleUploadFile = useCallback((file: File) => {
+    allowDetectionRef.current = true;
     stopDetection();
     loadFile(file);
   }, [stopDetection, loadFile]);

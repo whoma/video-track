@@ -6,89 +6,100 @@ interface Props {
   detectedClasses: string[];
 }
 
+// Singleton AudioContext to survive component remounts and avoid browser limits
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext {
+  if (!sharedAudioCtx) {
+    sharedAudioCtx = new AudioContext();
+  }
+  if (sharedAudioCtx.state === 'suspended') {
+    sharedAudioCtx.resume();
+  }
+  return sharedAudioCtx;
+}
+
 export default function AlertConfig({ isActive, detectedClasses }: Props): JSX.Element | null {
   const [alertClasses, setAlertClasses] = useState<Set<string>>(new Set());
   const [alertMode, setAlertMode] = useState<'sound' | 'vibrate' | 'both'>('sound');
   const lastAlertTimeRef = useRef<Record<string, number>>({});
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  // Use refs for values needed in the event listener to avoid stale closures
+  const alertClassesRef = useRef<Set<string>>(new Set());
+  const alertModeRef = useRef<'sound' | 'vibrate' | 'both'>('sound');
 
   useEffect(() => {
     if (!isActive) {
       setAlertClasses(new Set());
+      alertClassesRef.current = new Set();
       lastAlertTimeRef.current = {};
     }
   }, [isActive]);
 
-  // Ensure AudioContext is created & resumed on a user gesture
-  const ensureAudioCtx = useCallback(() => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
-    }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
-    }
-  }, []);
-
   const playBeep = useCallback(() => {
-    const ctx = audioCtxRef.current;
-    if (!ctx || ctx.state !== 'running') return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
+    try {
+      const ctx = sharedAudioCtx;
+      if (!ctx || ctx.state !== 'running') return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.3);
+    } catch { /* audio failed, ignore */ }
   }, []);
 
-  const triggerAlert = useCallback((cls: string) => {
-    const now = Date.now();
-    const last = lastAlertTimeRef.current[cls] || 0;
-    if (now - last < 2000) return;
-    lastAlertTimeRef.current[cls] = now;
-
-    if (alertMode === 'sound' || alertMode === 'both') {
-      playBeep();
-    }
-    if (alertMode === 'vibrate' || alertMode === 'both') {
-      navigator.vibrate?.(200);
-    }
-  }, [alertMode, playBeep]);
-
+  // Single stable event listener using refs — no dependency churn
   useEffect(() => {
-    if (!isActive || alertClasses.size === 0) return;
+    if (!isActive) return;
 
     const handler = (e: Event) => {
       const classes = (e as CustomEvent<string[]>).detail;
+      const watched = alertClassesRef.current;
+      if (watched.size === 0) return;
+
       for (const cls of classes) {
-        if (alertClasses.has(cls)) {
-          triggerAlert(cls);
+        if (watched.has(cls)) {
+          const now = Date.now();
+          const last = lastAlertTimeRef.current[cls] || 0;
+          if (now - last < 2000) break;
+          lastAlertTimeRef.current[cls] = now;
+
+          const mode = alertModeRef.current;
+          if (mode === 'sound' || mode === 'both') {
+            playBeep();
+          }
+          if (mode === 'vibrate' || mode === 'both') {
+            navigator.vibrate?.(200);
+          }
           break;
         }
       }
     };
     window.addEventListener('detection-classes', handler);
     return () => window.removeEventListener('detection-classes', handler);
-  }, [isActive, alertClasses, triggerAlert]);
+  }, [isActive, playBeep]);
 
-  // Toggle class AND initialize AudioContext on the same user click
   const toggleClass = useCallback((cls: string) => {
-    ensureAudioCtx();
+    // Initialize AudioContext on user gesture
+    getAudioCtx();
     setAlertClasses(prev => {
       const next = new Set(prev);
       if (next.has(cls)) next.delete(cls);
       else next.add(cls);
+      alertClassesRef.current = next;
       return next;
     });
-  }, [ensureAudioCtx]);
+  }, []);
 
   const handleModeChange = useCallback((mode: 'sound' | 'vibrate' | 'both') => {
-    ensureAudioCtx();
+    getAudioCtx();
     setAlertMode(mode);
-  }, [ensureAudioCtx]);
+    alertModeRef.current = mode;
+  }, []);
 
   if (!isActive || detectedClasses.length === 0) return null;
 

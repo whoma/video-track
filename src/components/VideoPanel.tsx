@@ -38,21 +38,49 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    const el = panelRef.current;
-    if (!el) return;
-
-    const doc = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element;
+      webkitExitFullscreen?: () => void;
+    };
     const isFS = !!(document.fullscreenElement || doc.webkitFullscreenElement);
 
     if (isFS) {
-      if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
-      else document.exitFullscreen().catch(() => {});
-    } else {
-      const reqFS = el.requestFullscreen
-        ?? (el as HTMLDivElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen;
-      if (reqFS) reqFS.call(el).catch(() => {});
+      try {
+        if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        } else if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      } catch { /* ignore */ }
+      return;
     }
-  }, []);
+
+    // Try panel fullscreen first (works on desktop browsers)
+    const el = panelRef.current;
+    if (el) {
+      const elAny = el as HTMLElement & { webkitRequestFullscreen?: () => void };
+      try {
+        if (el.requestFullscreen) {
+          el.requestFullscreen();
+          return;
+        } else if (elAny.webkitRequestFullscreen) {
+          elAny.webkitRequestFullscreen();
+          return;
+        }
+      } catch { /* fall through to video fallback */ }
+    }
+
+    // iOS fallback: fullscreen the video element directly
+    const video = videoRef.current;
+    if (video) {
+      const videoAny = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+      try {
+        if (videoAny.webkitEnterFullscreen) {
+          videoAny.webkitEnterFullscreen();
+        }
+      } catch { /* ignore */ }
+    }
+  }, [videoRef]);
 
   const makeCallbacks = useCallback((): DrawCallbacks => {
     const getCtx = (): CanvasContext | null => {
@@ -123,7 +151,7 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
       {!isActive && !loading && <div className="placeholder">点击下方按钮开启摄像头或上传视频</div>}
       {isActive && (
         <button className="fullscreen-btn" onClick={toggleFullscreen} title={isFullscreen ? '退出全屏' : '全屏'}>
-          {isFullscreen ? '✕' : '⛶'}
+          {isFullscreen ? '\u2716' : '\u2922'}
         </button>
       )}
     </div>
