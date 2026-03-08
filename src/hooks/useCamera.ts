@@ -34,7 +34,7 @@ export function useCamera(): UseCameraReturn {
     const constraints: MediaStreamConstraints = {
       video: deviceId
         ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
-        : { width: 1280, height: 720, facingMode: 'user' },
+        : { width: 1280, height: 720, facingMode: 'environment' },
       audio: false,
     };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);

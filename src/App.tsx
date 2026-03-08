@@ -148,43 +148,45 @@ export default function App(): JSX.Element {
         onVideoReady={handleVideoReady}
       />
 
-      <Controls
-        isActive={isActive}
-        recording={recording}
-        threshold={threshold}
-        onStart={handleStart}
-        onStop={handleStop}
-        onCapture={handleCapture}
-        onRecord={handleRecord}
-        onStopRecord={stopRecording}
-        onThresholdChange={setThreshold}
-      />
+      <div className="app-overlay">
+        <Controls
+          isActive={isActive}
+          recording={recording}
+          threshold={threshold}
+          onStart={handleStart}
+          onStop={handleStop}
+          onCapture={handleCapture}
+          onRecord={handleRecord}
+          onStopRecord={stopRecording}
+          onThresholdChange={setThreshold}
+        />
 
-      <ModelSelector
-        activeModel={activeModel}
-        loading={loading}
-        onSwitch={handleModelSwitch}
-      />
+        <ModelSelector
+          activeModel={activeModel}
+          loading={loading}
+          onSwitch={handleModelSwitch}
+        />
 
-      <SourceSelector
-        cameras={cameras}
-        activeCameraId={activeCameraId}
-        isActive={isActive}
-        onSwitchCamera={switchCamera}
-        onUploadFile={handleUploadFile}
-      />
+        <SourceSelector
+          cameras={cameras}
+          activeCameraId={activeCameraId}
+          isActive={isActive}
+          onSwitchCamera={switchCamera}
+          onUploadFile={handleUploadFile}
+        />
 
-      <StatusBar isActive={isActive} loading={loading} stats={stats} />
+        <StatusBar isActive={isActive} loading={loading} stats={stats} />
 
-      <StatsChart stats={stats} isActive={isActive} />
+        <StatsChart stats={stats} isActive={isActive} />
 
-      <AlertConfig isActive={isActive} detectedClasses={detectedClasses} />
+        <AlertConfig isActive={isActive} detectedClasses={detectedClasses} />
 
-      <SnapshotGallery
-        snapshots={snapshots}
-        onDelete={(i) => setSnapshots(prev => prev.filter((_, idx) => idx !== i))}
-        onClear={() => setSnapshots([])}
-      />
+        <SnapshotGallery
+          snapshots={snapshots}
+          onDelete={(i) => setSnapshots(prev => prev.filter((_, idx) => idx !== i))}
+          onClear={() => setSnapshots([])}
+        />
+      </div>
     </div>
   );
 }

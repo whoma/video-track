@@ -1,8 +1,7 @@
 .alert-config {
-  margin-top: 24px;
   width: 100%;
   max-width: 720px;
-  background: #1e1e32;
+  background: rgba(30, 30, 50, 0.85);
   border-radius: 12px;
   padding: 16px;
 }

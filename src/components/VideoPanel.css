@@ -1,18 +1,15 @@
 .video-panel {
   position: relative;
-  width: 680px;
-  max-width: 100%;
-  border-radius: 12px;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
-  background: #111;
-  aspect-ratio: 16 / 9;
+  background: #000;
 }
 
 .video-panel video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -60,37 +57,3 @@
   to { transform: rotate(360deg); }
 }
 
-.video-panel.expanded {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  border-radius: 0;
-  aspect-ratio: auto;
-  background: #000;
-  z-index: 100;
-}
-
-.expand-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 101;
-  transition: background 0.2s;
-  line-height: 1;
-}
-
-.expand-btn:hover {
-  background: rgba(78, 204, 163, 0.7);
-}

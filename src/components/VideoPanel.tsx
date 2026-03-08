@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, type RefObject, type JSX } from 'react';
+import { useRef, useCallback, useEffect, type RefObject, type JSX } from 'react';
 import { drawDetections, drawFaces, drawPoses, drawHands, drawFaceMesh, drawSegmentation } from '../utils/drawDetections';
 import type { Detection, FaceDetection, Pose, Hand, Face } from '../utils/drawDetections';
 import type { DrawCallbacks } from '../hooks/useDetector';
@@ -21,7 +21,6 @@ interface Props {
 
 export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [expanded, setExpanded] = useState(false);
 
   const makeCallbacks = useCallback((): DrawCallbacks => {
     const getCtx = (): CanvasContext | null => {
@@ -85,16 +84,11 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
   };
 
   return (
-    <div className={`video-panel${expanded ? ' expanded' : ''}`}>
+    <div className="video-panel">
       <video ref={videoRef} autoPlay playsInline onLoadedData={handleLoadedData} />
       <canvas ref={canvasRef} className="overlay" />
       {loading && <div className="loading-overlay"><div className="loading-spinner" />模型加载中...</div>}
       {!isActive && !loading && <div className="placeholder">点击下方按钮开启摄像头或上传视频</div>}
-      {isActive && (
-        <button className="expand-btn" onClick={() => setExpanded(!expanded)} title={expanded ? '还原' : '放大'}>
-          {expanded ? '−' : '+'}
-        </button>
-      )}
     </div>
   );
 }
