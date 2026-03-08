@@ -180,7 +180,11 @@ export default function App(): JSX.Element {
 
       <AlertConfig isActive={isActive} detectedClasses={detectedClasses} />
 
-      <SnapshotGallery snapshots={snapshots} />
+      <SnapshotGallery
+        snapshots={snapshots}
+        onDelete={(i) => setSnapshots(prev => prev.filter((_, idx) => idx !== i))}
+        onClear={() => setSnapshots([])}
+      />
     </div>
   );
 }

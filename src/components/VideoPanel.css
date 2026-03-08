@@ -38,10 +38,26 @@
   font-size: 16px;
   color: #4ecca3;
   background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .video-panel .placeholder {
   color: #666;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #333;
+  border-top-color: #4ecca3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .video-panel.fullscreen {
@@ -56,8 +72,8 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.5);

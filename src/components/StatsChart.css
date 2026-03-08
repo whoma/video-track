@@ -12,6 +12,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .chart-header h3 {
@@ -20,15 +22,33 @@
   font-weight: 500;
 }
 
+.stats-badges {
+  display: flex;
+  gap: 6px;
+}
+
 .fps-badge {
   background: #2a3a35;
   color: #4ecca3;
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
+}
+.fps-badge.avg {
+  background: #2a2a3e;
+  color: #3498db;
+}
+.fps-badge.ms {
+  background: #3a2a2a;
+  color: #e67e22;
 }
 
 .chart-container {
   width: 100%;
+  margin-top: 8px;
+}
+
+.chart-container + .chart-container {
+  margin-top: 16px;
 }

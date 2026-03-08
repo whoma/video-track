@@ -147,7 +147,7 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
     <div ref={panelRef} className={`video-panel${isFullscreen ? ' fullscreen' : ''}`}>
       <video ref={videoRef} autoPlay playsInline onLoadedData={handleLoadedData} />
       <canvas ref={canvasRef} className="overlay" />
-      {loading && <div className="loading-overlay">模型加载中...</div>}
+      {loading && <div className="loading-overlay"><div className="loading-spinner" />模型加载中...</div>}
       {!isActive && !loading && <div className="placeholder">点击下方按钮开启摄像头或上传视频</div>}
       {isActive && (
         <button className="fullscreen-btn" onClick={toggleFullscreen} title={isFullscreen ? '退出全屏' : '全屏'}>

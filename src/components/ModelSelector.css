@@ -58,3 +58,13 @@
 .model-btn.active .model-desc {
   color: #4ecca3aa;
 }
+
+@media (max-width: 600px) {
+  .model-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  .model-desc {
+    font-size: 10px;
+  }
+}
