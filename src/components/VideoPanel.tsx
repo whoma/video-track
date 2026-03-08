@@ -21,66 +21,7 @@ interface Props {
 
 export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }: Props): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const onChange = () => {
-      const doc = document as Document & { webkitFullscreenElement?: Element };
-      setIsFullscreen(!!(document.fullscreenElement || doc.webkitFullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', onChange);
-    document.addEventListener('webkitfullscreenchange', onChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', onChange);
-      document.removeEventListener('webkitfullscreenchange', onChange);
-    };
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    const doc = document as Document & {
-      webkitFullscreenElement?: Element;
-      webkitExitFullscreen?: () => void;
-    };
-    const isFS = !!(document.fullscreenElement || doc.webkitFullscreenElement);
-
-    if (isFS) {
-      try {
-        if (doc.webkitExitFullscreen) {
-          doc.webkitExitFullscreen();
-        } else if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
-      } catch { /* ignore */ }
-      return;
-    }
-
-    // Try panel fullscreen first (works on desktop browsers)
-    const el = panelRef.current;
-    if (el) {
-      const elAny = el as HTMLElement & { webkitRequestFullscreen?: () => void };
-      try {
-        if (el.requestFullscreen) {
-          el.requestFullscreen();
-          return;
-        } else if (elAny.webkitRequestFullscreen) {
-          elAny.webkitRequestFullscreen();
-          return;
-        }
-      } catch { /* fall through to video fallback */ }
-    }
-
-    // iOS fallback: fullscreen the video element directly
-    const video = videoRef.current;
-    if (video) {
-      const videoAny = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
-      try {
-        if (videoAny.webkitEnterFullscreen) {
-          videoAny.webkitEnterFullscreen();
-        }
-      } catch { /* ignore */ }
-    }
-  }, [videoRef]);
+  const [expanded, setExpanded] = useState(false);
 
   const makeCallbacks = useCallback((): DrawCallbacks => {
     const getCtx = (): CanvasContext | null => {
@@ -144,14 +85,14 @@ export default function VideoPanel({ videoRef, isActive, loading, onVideoReady }
   };
 
   return (
-    <div ref={panelRef} className={`video-panel${isFullscreen ? ' fullscreen' : ''}`}>
+    <div className={`video-panel${expanded ? ' expanded' : ''}`}>
       <video ref={videoRef} autoPlay playsInline onLoadedData={handleLoadedData} />
       <canvas ref={canvasRef} className="overlay" />
       {loading && <div className="loading-overlay"><div className="loading-spinner" />模型加载中...</div>}
       {!isActive && !loading && <div className="placeholder">点击下方按钮开启摄像头或上传视频</div>}
       {isActive && (
-        <button className="fullscreen-btn" onClick={toggleFullscreen} title={isFullscreen ? '退出全屏' : '全屏'}>
-          {isFullscreen ? '\u2716' : '\u2922'}
+        <button className="expand-btn" onClick={() => setExpanded(!expanded)} title={expanded ? '还原' : '放大'}>
+          {expanded ? '−' : '+'}
         </button>
       )}
     </div>

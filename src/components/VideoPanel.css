@@ -60,15 +60,18 @@
   to { transform: rotate(360deg); }
 }
 
-.video-panel.fullscreen {
+.video-panel.expanded {
+  position: fixed;
+  inset: 0;
   width: 100vw;
   height: 100vh;
   border-radius: 0;
   aspect-ratio: auto;
   background: #000;
+  z-index: 100;
 }
 
-.fullscreen-btn {
+.expand-btn {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -78,16 +81,16 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 101;
   transition: background 0.2s;
   line-height: 1;
 }
 
-.fullscreen-btn:hover {
+.expand-btn:hover {
   background: rgba(78, 204, 163, 0.7);
 }
